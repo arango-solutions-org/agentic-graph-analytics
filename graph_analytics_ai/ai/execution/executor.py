@@ -494,7 +494,7 @@ class AnalysisExecutor:
     def _attach_source_attributes(
         self, db: Any, results: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
-        """Resolve each result row back to its source vertex's name and type.
+        """Resolve each result row back to its source vertex's name and type (NFR-19).
 
         GAE result rows carry only identifiers -- ``{"id": "Node/ab12", "rank":
         0.0016}`` -- so a report built from them can describe the shape of a
@@ -502,7 +502,9 @@ class AnalysisExecutor:
         read "the top-ranked node (0.00157) is 6.9x more influential than the
         10th", when the top two were `net income` and `revenue`. Worse, the
         missing names invited invention: one insight attributed the result to
-        "multiple GICS sectors", a dimension absent from the graph entirely.
+        "multiple GICS sectors", a dimension absent from the graph entirely —
+        which is NFR-19's case exactly, a product reporting what it did not
+        establish. Names are what let a report cite evidence instead of inferring.
 
         Community/component fields hold a representative vertex id too, so those
         are resolved as well -- a component is far more legible as "anchored on
