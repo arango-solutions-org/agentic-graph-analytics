@@ -994,11 +994,13 @@ Your goal: Execute analyses reliably and efficiently."""
         )
         templates_to_run = state.templates[:max_executions]
 
-        # Execute templates concurrently, but BOUNDED.
+        # Execute templates concurrently, but BOUNDED (FR-27, NFR-19).
         #
         # `enable_parallelism=False` sequences workflow *steps*; it does not
         # reach here, so this fan-out used to run every template at once
-        # whatever the caller asked for. Analyses share one GAE engine and each
+        # whatever the caller asked for. FR-27 promises distinct agentic and
+        # parallel-agentic modes; bounding both is honest but does not yet
+        # derive the limit from WorkflowMode, so FR-27 stays PARTIAL. Analyses share one GAE engine and each
         # loads the whole graph first, so an unbounded gather multiplies load on
         # a single engine: a FinReflectKG run died on `503 Service Unavailable`
         # from /loaddata, with jobs failing to register inside the status-poll

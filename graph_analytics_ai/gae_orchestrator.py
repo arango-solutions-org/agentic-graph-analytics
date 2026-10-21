@@ -938,7 +938,7 @@ class GAEOrchestrator:
         exec_start = datetime.now()
 
         # Build algorithm parameters (graph_id + any custom params), then drop
-        # anything the target engine method does not accept.
+        # anything the target engine method does not accept (NFR-19).
         #
         # These params are splatted into a typed signature, so a single unknown
         # key raises TypeError and loses the whole analysis — and the parameter
