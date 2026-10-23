@@ -130,7 +130,7 @@ class ProductArangoStorage:
             collection.insert(doc)
 
     def _create_indexes(self) -> None:
-        """Create indexes used by dashboard and API queries.
+        """Create indexes used by dashboard and API queries (NFR-12).
 
         Declared as data rather than 50 imperative calls so the set is
         reviewable at a glance and testable without a database. Every index is

@@ -1,4 +1,12 @@
-"""Index creation for ArangoDB collections.
+"""Index creation for ArangoDB collections (NFR-12, NFR-19).
+
+NFR-12 requires queries to use indexed workspace, run, timestamp, status and
+lineage fields. That requirement was silently unmet on any fresh deployment
+until this module existed, because the driver calls it depended on had been
+removed. NFR-19 is why the failure path reports specifically rather than
+shrugging: a mechanism that cannot run must fail loudly, not quietly do
+nothing.
+
 
 `add_hash_index` and `add_skiplist_index` were removed in python-arango 8, and
 `add_persistent_index` is deprecated in favour of `add_index`. This module

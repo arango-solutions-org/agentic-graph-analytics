@@ -134,7 +134,7 @@ class ArangoDBStorage(StorageBackend):
             raise StorageError(f"Failed to initialize collections: {e}") from e
 
     def _create_indexes(self) -> None:
-        """Create indexes for efficient queries."""
+        """Create indexes for efficient queries (NFR-12)."""
         specs = [
             # Timestamp for time-series queries
             IndexSpec(self.EXECUTIONS_COLLECTION, ["timestamp"]),
