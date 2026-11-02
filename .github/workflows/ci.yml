@@ -79,10 +79,16 @@ jobs:
         import sys, xml.etree.ElementTree as ET
         root = ET.parse("db-tests.xml").getroot()
         suite = root.find("testsuite") if root.tag == "testsuites" else root
-        ran = int(suite.get("tests", 0)) - int(suite.get("skipped", 0))
-        if ran < 20:
-            sys.exit(f"database-backed tests did not run: only {ran} executed")
-        print(f"{ran} database-backed tests executed")
+        total = int(suite.get("tests", 0))
+        skipped = int(suite.get("skipped", 0))
+        # Not a count: a floor would protect only the tests that exist today,
+        # so five added tests could skip and the build would stay green. With
+        # ARANGO_TEST_URL set, none of these may skip for any reason.
+        if total == 0:
+            sys.exit("database-backed tests collected nothing; have they moved?")
+        if skipped:
+            sys.exit(f"database-backed tests must not skip: {skipped} of {total} did")
+        print(f"{total} database-backed tests executed")
         GUARD
 
     - name: Run tests with coverage
