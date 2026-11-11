@@ -134,6 +134,25 @@ class ReportGenerator:
                     }
                 )
 
+            # FR-75: the analysis this report covers, and why it was chosen.
+            # The caller resolves which use case the result belongs to; an
+            # absent entry means it could not be resolved, and nothing is
+            # claimed rather than the wrong thing.
+            use_case_ctx = context.get("use_case")
+            if isinstance(use_case_ctx, dict):
+                report.metadata["selected_analysis"] = {
+                    "id": use_case_ctx.get("id"),
+                    "title": use_case_ctx.get("title"),
+                    "rationale": (use_case_ctx.get("rationale") or "").strip(),
+                    "algorithms": list(use_case_ctx.get("algorithms") or []),
+                    "target_collections": list(
+                        use_case_ctx.get("target_collections") or []
+                    ),
+                    # None means "not known", which the summary reports as
+                    # silence; [] means "ran over the whole graph".
+                    "applied_collections": use_case_ctx.get("applied_collections"),
+                }
+
         # Extract metrics from results
         report.metrics = self._extract_metrics(execution_result)
 
@@ -167,6 +186,7 @@ class ReportGenerator:
     def _create_discovery_summary_content(self, report: AnalysisReport) -> str:
         """Create a high-signal Discovery Summary section."""
         baseline = report.metadata.get("baseline_comparison") or {}
+        selected = report.metadata.get("selected_analysis") or {}
 
         delta_insights = [i for i in report.insights if i.title.strip().startswith("Δ")]
         risk_insights = [
@@ -177,6 +197,53 @@ class ReportGenerator:
         risk_insights.sort(key=lambda x: x.confidence or 0.0, reverse=True)
 
         lines: List[str] = []
+
+        # FR-75: what this run chose, and why. An unattended run has nobody
+        # to ask, so a report that omits this cannot be told apart from one
+        # that analysed the whole graph by default.
+        if selected:
+            title = selected.get("title") or selected.get("id") or "this analysis"
+            lines.append(f"**Analysis selected:** {title}")
+
+            # The algorithm that RAN, not the one the plan named. A use case
+            # can carry an unparseable algorithm string (a free-form analyzer
+            # suggestion), in which case the template generator silently falls
+            # back to the use-case-type mapping and something else executes.
+            if report.algorithm:
+                lines.append(f"- **Algorithm:** {report.algorithm}")
+
+            # Likewise the collections the template was actually built over.
+            # Targets the plan named that do not resolve against the schema are
+            # dropped, leaving the analysis at full scope — reporting the
+            # request as though it were applied is the failure this section
+            # exists to prevent.
+            applied = selected.get("applied_collections")
+            requested = [str(t) for t in selected.get("target_collections") or []]
+            if applied is None:
+                # The template this report came from could not be identified,
+                # so the scope that ran is unknown. Saying nothing beats
+                # repeating the request as though it had been applied.
+                pass
+            elif applied:
+                lines.append(f"- **Scoped to:** {', '.join(str(t) for t in applied)}")
+            else:
+                lines.append("- **Scoped to:** the whole graph (no narrower target)")
+            if applied is not None:
+                dropped = [t for t in requested if t not in applied]
+                if dropped:
+                    lines.append(
+                        f"- **Requested but not applied:** {', '.join(dropped)} "
+                        "(not found in the graph's schema)"
+                    )
+            rationale = selected.get("rationale") or ""
+            if rationale:
+                lines.append(f"- **Why:** {rationale}")
+            else:
+                lines.append(
+                    "- **Why:** _not recorded — this analysis came from the fixed "
+                    "bundle rather than a plan._"
+                )
+            lines.append("")
 
         if baseline:
             lines.append("**Baseline comparison:** enabled")
