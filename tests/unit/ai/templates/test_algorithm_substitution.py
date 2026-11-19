@@ -71,6 +71,39 @@ def test_an_unrunnable_planned_algorithm_is_recorded_as_a_substitution():
     assert "wcc" in reason
 
 
+def test_a_junk_name_beside_a_runnable_one_is_still_flagged():
+    """The gap the first version of this check had.
+
+    ``graph_algorithms`` is a list. If any entry resolved to the chosen
+    algorithm the whole list passed, so a template could still store
+    "centrality" — a name that is neither what ran nor an algorithm the
+    engine has — and say nothing.
+    """
+
+    template = _template(_use_case(["centrality", "wcc"]))
+
+    assert template.algorithm.algorithm is AlgorithmType.WCC
+    assert template.metadata["algorithm_substituted_from"] == ["centrality", "wcc"]
+    assert template.metadata["algorithm_unrunnable_names"] == ["centrality"]
+
+
+def test_order_does_not_decide_whether_a_junk_name_is_flagged():
+    template = _template(_use_case(["wcc", "centrality"]))
+
+    assert template.metadata["algorithm_unrunnable_names"] == ["centrality"]
+
+
+def test_the_reason_separates_substitution_from_an_unrunnable_name():
+    """They are different facts and a list can carry both."""
+
+    reason = _template(_use_case(["centrality"])).metadata[
+        "algorithm_substitution_reason"
+    ]
+
+    assert "name no algorithm the engine implements" in reason
+    assert "Running wcc" in reason
+
+
 def test_a_planned_algorithm_the_engine_has_is_not_flagged():
     template = _template(_use_case(["wcc"]))
 
@@ -102,7 +135,7 @@ def test_the_substitution_is_logged_as_a_warning(caplog):
         _template(_use_case(["centrality"]))
 
     assert any(
-        "runs wcc, not the planned ['centrality']" in r.getMessage().lower()
+        "runs wcc; planned ['centrality']" in r.getMessage().lower()
         for r in caplog.records
     )
 

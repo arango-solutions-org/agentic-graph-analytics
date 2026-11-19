@@ -414,34 +414,45 @@ class TemplateGenerator:
         # graph_algorithms unchecked — and selection then falls back to
         # USE_CASE_TO_ALGORITHM. Storing both without saying so leaves the
         # template asserting two different algorithms, which is the state the
-        # requirement forbids. Record the substitution instead.
+        # requirement forbids.
+        #
+        # Two distinct facts, either of which makes the stored list a lie about
+        # what runs, and a list can carry both at once:
+        #   - the chosen algorithm is not among the ones planned
+        #   - a planned entry names no algorithm the engine implements
+        # A membership test alone misses the second whenever some *other*
+        # entry happens to match, so they are checked separately.
         planned = [
             str(a).strip() for a in (use_case.graph_algorithms or []) if str(a).strip()
         ]
-        if planned and algorithm_type not in {
-            resolved
-            for resolved in (resolve_algorithm_name(name) for name in planned)
-            if resolved is not None
-        }:
-            unrunnable = [p for p in planned if resolve_algorithm_name(p) is None]
+        resolved = {name: resolve_algorithm_name(name) for name in planned}
+        unrunnable = [name for name, algo in resolved.items() if algo is None]
+        substituted = planned and algorithm_type not in set(resolved.values())
+
+        if planned and (unrunnable or substituted):
+            reasons = []
+            if substituted:
+                reasons.append(
+                    f"none of {planned} was selected as the primary algorithm"
+                )
+            if unrunnable:
+                reasons.append(f"{unrunnable} name no algorithm the engine implements")
             template_metadata["algorithm_substituted_from"] = planned
+            template_metadata["algorithm_unrunnable_names"] = unrunnable
             template_metadata["algorithm_substitution_reason"] = (
                 f"use case {use_case.id} planned {planned}; "
-                + (
-                    f"{unrunnable} name no algorithm the engine implements"
-                    if unrunnable
-                    else "none was selected as the primary algorithm"
-                )
-                + f", so {algorithm_type.value} was chosen from the "
-                f"{use_case.use_case_type.value} mapping"
+                + "; ".join(reasons)
+                + f". Running {algorithm_type.value}, chosen from the "
+                f"{use_case.use_case_type.value} mapping."
             )
             logger.warning(
-                "Template %s runs %s, not the planned %s (use case %s)",
+                "Template %s runs %s; planned %s (unrunnable: %s)",
                 f"{use_case.id}: {use_case.title}",
                 algorithm_type.value,
                 planned,
-                use_case.id,
+                unrunnable or "none",
             )
+
         if schema_kind:
             template_metadata["schema_kind"] = schema_kind
         if lpg_projections:
