@@ -698,7 +698,10 @@ version without losing prior context, audit trail, or domain.
   substitution it made; it MUST NOT silently run an algorithm other than the one
   the use case names. A report MUST state the algorithm that *executed* rather
   than the one that was planned, and where the two differ the substitution MUST
-  be visible to the reader. FR-75 pins this for the autonomous planner, whose
+  be visible to the reader. A template MUST NOT store a planned algorithm that
+  contradicts the one it will run: `metadata["algorithms"]` and the template's
+  own `algorithm` either agree or the template records that a substitution was
+  made. FR-75 pins the first half of this for the autonomous planner, whose
   `_coerce_use_case` drops any unsupported algorithm before execution; this
   generalises the rule to the curated and suggestion-derived paths, which
   predate it.
@@ -712,9 +715,15 @@ version without losing prior context, audit trail, or domain.
   against `AlgorithmType`, and `TemplateGenerator`
   (`graph_analytics_ai/ai/templates/generator.py:151`) then skips the entries it
   cannot parse and falls back to `USE_CASE_TO_ALGORITHM`. A use case naming
-  "centrality" therefore runs WCC, with no warning logged and no field recording
-  the substitution. Reproduced while reviewing PR #30. Tracked as a drift alert
-  on FR-18a.)*
+  "centrality" therefore runs WCC. The planned name is not lost — it is copied
+  into `template.metadata["algorithms"]`
+  (`graph_analytics_ai/ai/templates/generator.py:387`), which then sits beside a
+  `template.algorithm` of `wcc` and contradicts it, with nothing reconciling the
+  two and no warning logged. The unvalidated value also round-trips through
+  import, which reads it back into `graph_algorithms`
+  (`graph_analytics_ai/product/service.py:2883`). The fix is therefore to
+  reconcile two fields that already exist, not to add a third. Reproduced while
+  reviewing PR #30. Tracked as a drift alert on FR-18a.)*
 - **FR-19:** Users can manually create and edit draft use cases. *(Implemented:
   `ProductService.create_use_case` / `update_use_case`
   (`graph_analytics_ai/product/service.py:1305`) back the authoring form in
