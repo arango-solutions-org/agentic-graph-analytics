@@ -17,6 +17,9 @@
   unchecked, and the template generator silently substitutes a different
   algorithm when it cannot parse it. Found while reviewing PR #30, which
   fixed the reporting half; the generating half is open and tracked.
+  *(Since 0.8.1: PR #32 closed the template clause — a substitution is now
+  recorded and logged rather than hidden. The generator still produces the
+  unvalidated value, so FR-18a remains PARTIAL.)*
 - **0.8 (2026-11-03)** — One addition and one correction, both from
   `/prd-sync`. (1) **FR-75 (Autonomous analysis)** — a fourth mode, built
   before it was specified: the user picks a graph profile and nothing else,
@@ -705,8 +708,9 @@ version without losing prior context, audit trail, or domain.
   `_coerce_use_case` drops any unsupported algorithm before execution; this
   generalises the rule to the curated and suggestion-derived paths, which
   predate it.
-  *(PARTIAL — the reporting half is done, the generating half is not. Done: the
-  Discovery Summary renders `report.algorithm`, the executed job's
+  *(PARTIAL — reporting and the template check are done, validation at the
+  generator is not. Done: the Discovery Summary renders `report.algorithm`,
+  the executed job's
   (`graph_analytics_ai/ai/reporting/generator.py:186`), so a substitution can no
   longer be reported as though it were the plan. Not done:
   `UseCaseGenerator._use_case_from_suggestion` copies the analyzer's free-form
