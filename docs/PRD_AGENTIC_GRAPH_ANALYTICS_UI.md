@@ -1779,11 +1779,11 @@ older requirement, this section wins.
   `_dispatch_as_caller`); a user without access gets 403 naming the database,
   a request without a login 401. On the platform the zero-config connect flow
   lists the databases the signed-in user can use
-  (`product/service.py:3717`) and the UI creates a platform-login profile
-  (`frontend/src/lib/product-api/client.ts:1562`). (c) done: starting a run
-  records who started it (`product/service.py:1615`, `metadata.started_by`)
+  (`_list_platform_user_databases`, `product/service.py:3941`) and the UI creates a platform-login profile
+  (`frontend/src/lib/product-api/client.ts:1583`). (c) done: starting a run
+  records who started it (`product/service.py:1817`, `metadata[STARTED_BY_KEY]`)
   and the supervisor opens the run's graph as that user
-  (`product/agentic_run_supervisor.py:829`). (d) not yet done: GAE still logs
+  (`open_as_platform_user`, `product/agentic_run_supervisor.py:866`). (d) not yet done: GAE still logs
   in with the deployment's password (`gae_connection.py`, `/_open/auth`) and
   loads from the deployment's `ARANGO_DATABASE`, so NFR-22's entrypoint check
   for `ARANGO_PASSWORD` stays until it is.)*
